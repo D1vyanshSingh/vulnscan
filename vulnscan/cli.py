@@ -31,11 +31,19 @@ def build_parser() -> argparse.ArgumentParser:
                         help=f"per-probe timeout in seconds (default {DEFAULT_TIMEOUT})")
     parser.add_argument("-c", "--concurrency", type=int, default=256,
                         help="max simultaneous probes (default 256)")
-    parser.add_argument("--json", metavar="PATH", help="write JSON report to PATH")
-    parser.add_argument("--html", metavar="PATH", help="write HTML report to PATH")
+    parser.add_argument("--json", metavar="PATH", nargs="?", const="auto",
+                        help="write JSON report to PATH (default: automatic)")
+    parser.add_argument("--html", metavar="PATH", nargs="?", const="auto",
+                        help="write HTML report to PATH (default: automatic)")
     parser.add_argument("--pdf", metavar="PATH", nargs="?", const="auto",
-                        help="also render a PDF report; with no PATH it goes to "
-                             "your Downloads folder automatically")
+                        help="render a PDF report; with no PATH it goes to your "
+                             "Downloads folder automatically (default: automatic)")
+    parser.add_argument("--no-html", action="store_true",
+                        help="skip the automatic HTML report")
+    parser.add_argument("--no-json", action="store_true",
+                        help="skip the automatic JSON report")
+    parser.add_argument("--no-pdf", action="store_true",
+                        help="skip the automatic PDF report")
     parser.add_argument("--legacy-tls", action="store_true",
                         help="also test for TLS 1.0/1.1 support (slower)")
     parser.add_argument("-q", "--quiet", action="store_true",
@@ -88,19 +96,30 @@ def main(argv: list[str] | None = None) -> int:
     color = sys.stdout.isatty() and not args.no_color
     print_summary(report, color=color)
 
+    # Reports are automatic by default: report files land in out/, the PDF in
+    # Downloads. Explicit paths override; --no-* flags opt out.
+    stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     written = []
-    if args.json:
-        write_json(report, args.json)
-        written.append(args.json)
-    html_path = args.html
-    if args.pdf is not None and not html_path:
-        html_path = os.path.join("out", "report.html")   # required for rendering
+    json_path = None if args.no_json else (
+        args.json if args.json else os.path.join("out", f"vulnscan-report_{stamp}.json"))
+    html_path = None if args.no_html else (
+        args.html if args.html else os.path.join("out", f"vulnscan-report_{stamp}.html"))
+    if json_path == "auto":
+        json_path = os.path.join("out", f"vulnscan-report_{stamp}.json")
+    if html_path == "auto":
+        html_path = os.path.join("out", f"vulnscan-report_{stamp}.html")
+    if json_path:
+        os.makedirs(os.path.dirname(json_path) or ".", exist_ok=True)
+        write_json(report, json_path)
+        written.append(json_path)
     if html_path:
+        os.makedirs(os.path.dirname(html_path) or ".", exist_ok=True)
         write_html(report, html_path)
         written.append(html_path)
-    if args.pdf is not None:
+    wants_pdf = (not args.no_pdf) if args.pdf is None else (args.pdf is not None)
+    if wants_pdf and html_path:
         target = (pdf_mod.default_pdf_path()
-                  if args.pdf == "auto" else Path(args.pdf))
+                  if args.pdf in (None, "auto") else Path(args.pdf))
         try:
             pdf_path = pdf_mod.html_to_pdf(Path(html_path), target)
             written.append(str(pdf_path))
