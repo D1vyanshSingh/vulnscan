@@ -11,11 +11,15 @@ with an appendix of observed services.
 ## Quick start
 
 ```bash
-python -m vulnscan scanme.org                            # fastest taste
-python -m vulnscan <target> --html report.html --json report.json
+python -m vulnscan scanme.org            # scan + ALL reports, automatically
 
-# scan + automatic PDF in your Downloads folder (uses local Edge/Chrome):
-python -m vulnscan <target> --pdf
+# that single command writes:
+#   out/vulnscan-report_<timestamp>.html   — styled assessment report
+#   out/vulnscan-report_<timestamp>.json   — machine-readable findings
+#   (your Downloads folder)/vulnscan-report_<timestamp>.pdf — rendered report
+
+# only the summary in the terminal, no files:
+python -m vulnscan scanme.org --no-html --no-json --no-pdf
 
 # preview the generated report on this machine:
 python3 tests/serve_report.py            # → http://127.0.0.1:8622/report.html
@@ -31,8 +35,7 @@ python -m vulnscan <target> [targets...] [options]
 # Examples
 python -m vulnscan scanme.org                     # default "top" port set
 python -m vulnscan 10.0.0.0/29 -p 1-1024          # CIDR + explicit range
-python -m vulnscan example.com -p 22,80,8000-8100 --legacy-tls \
-       --html report.html --json report.json
+python -m vulnscan example.com -p 22,80,8000-8100 --legacy-tls
 python -m vulnscan --version
 ```
 
@@ -44,8 +47,9 @@ Options:
 | `-t, --timeout` | per-probe timeout seconds (default 2.5) |
 | `-c, --concurrency` | max simultaneous probes (default 256) |
 | `--legacy-tls` | additionally test for TLS 1.0/1.1 support (slower) |
-| `--html PATH` / `--json PATH` | write the HTML / JSON report |
-| `--pdf [PATH]` | render a PDF after the scan; with no path it lands in your Downloads folder automatically, e.g. `vulnscan-report_2026-10-16_151846.pdf` |
+| *(default)* | HTML + JSON reports land in `out/`, PDF in Downloads — automatically |
+| `--html PATH` / `--json PATH` / `--pdf PATH` | override the automatic report destination |
+| `--no-html` / `--no-json` / `--no-pdf` | skip that report artifact |
 | `-q, --quiet` | no progress output |
 | `--no-color` | plain terminal output |
 
@@ -143,12 +147,11 @@ services on loopback (open Redis, no-auth memcached, anonymous vsftpd 2.3.4,
 plain HTTP, self-signed HTTPS, plain-HTTP Docker API). Then:
 
 ```bash
-python -m vulnscan 127.0.0.1 -p 21,6379,11211,8080,8443,2375 \
-       --html out/report.html --json out/report.json
+python -m vulnscan 127.0.0.1 -p 21,6379,11211,8080,8443,2375
 ```
 
-Exercises the whole pipeline: the same command gets the PDF for free when
-`--pdf` is appended.
+Reports are automatic — this one command produces the HTML, JSON and the
+Downloads-folder PDF with no extra flags.
 
 ## Layout
 
