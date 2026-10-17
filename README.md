@@ -48,6 +48,7 @@ Options:
 | `-c, --concurrency` | max simultaneous probes (default 256) |
 | `--legacy-tls` | additionally test for TLS 1.0/1.1 support (slower) |
 | *(default)* | HTML + JSON reports land in `out/`, PDF in Downloads — automatically |
+| `-o, --output-dir DIR` | directory for the automatic HTML/JSON reports (default `out/`) |
 | `--html PATH` / `--json PATH` / `--pdf PATH` | override the automatic report destination |
 | `--no-html` / `--no-json` / `--no-pdf` | skip that report artifact |
 | `-q, --quiet` | no progress output |

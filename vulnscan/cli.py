@@ -29,6 +29,9 @@ def build_parser() -> argparse.ArgumentParser:
                              "'22,80,8000-8100'")
     parser.add_argument("-t", "--timeout", type=float, default=DEFAULT_TIMEOUT,
                         help=f"per-probe timeout in seconds (default {DEFAULT_TIMEOUT})")
+    parser.add_argument("-o", "--output-dir", metavar="DIR", default="out",
+                        help="directory for the automatic HTML/JSON reports "
+                             "(default: out)")
     parser.add_argument("-c", "--concurrency", type=int, default=256,
                         help="max simultaneous probes (default 256)")
     parser.add_argument("--json", metavar="PATH", nargs="?", const="auto",
@@ -96,18 +99,20 @@ def main(argv: list[str] | None = None) -> int:
     color = sys.stdout.isatty() and not args.no_color
     print_summary(report, color=color)
 
-    # Reports are automatic by default: report files land in out/, the PDF in
-    # Downloads. Explicit paths override; --no-* flags opt out.
+    # Reports are automatic by default: report files land in the output
+    # directory (default out/), the PDF in Downloads. Explicit paths override;
+    # --no-* flags opt out.
     stamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    out_dir = args.output_dir
     written = []
     json_path = None if args.no_json else (
-        args.json if args.json else os.path.join("out", f"vulnscan-report_{stamp}.json"))
+        args.json if args.json else os.path.join(out_dir, f"vulnscan-report_{stamp}.json"))
     html_path = None if args.no_html else (
-        args.html if args.html else os.path.join("out", f"vulnscan-report_{stamp}.html"))
+        args.html if args.html else os.path.join(out_dir, f"vulnscan-report_{stamp}.html"))
     if json_path == "auto":
-        json_path = os.path.join("out", f"vulnscan-report_{stamp}.json")
+        json_path = os.path.join(out_dir, f"vulnscan-report_{stamp}.json")
     if html_path == "auto":
-        html_path = os.path.join("out", f"vulnscan-report_{stamp}.html")
+        html_path = os.path.join(out_dir, f"vulnscan-report_{stamp}.html")
     if json_path:
         os.makedirs(os.path.dirname(json_path) or ".", exist_ok=True)
         write_json(report, json_path)
