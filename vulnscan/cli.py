@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import __version__, pdf as pdf_mod
+from . import config as config_mod
 from .checks import run_checks
 from .report import build_report, print_summary, write_html, write_json
 from .scanner import DEFAULT_TIMEOUT, run_scan
@@ -22,16 +23,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="vulnscan",
         description="Network/service vulnerability scanner with HTML and JSON reports.")
-    parser.add_argument("targets", nargs="+",
+    parser.add_argument("targets", nargs="*",
                         help="hostnames, IPs or CIDR ranges to scan")
     parser.add_argument("-p", "--ports", default=None,
                         help="port spec: 'top' (default), 'all', or e.g. "
                              "'22,80,8000-8100'")
     parser.add_argument("-t", "--timeout", type=float, default=DEFAULT_TIMEOUT,
                         help=f"per-probe timeout in seconds (default {DEFAULT_TIMEOUT})")
-    parser.add_argument("-o", "--output-dir", metavar="DIR", default="out",
+    parser.add_argument("-o", "--output-dir", metavar="DIR", default=None,
                         help="directory for the automatic HTML/JSON reports "
-                             "(default: out)")
+                             "(default: saved config, otherwise out)")
+    parser.add_argument("--pdf-dir", metavar="DIR", default=None,
+                        help="directory for the automatic PDF report "
+                             "(default: saved config, otherwise Downloads)")
     parser.add_argument("-c", "--concurrency", type=int, default=256,
                         help="max simultaneous probes (default 256)")
     parser.add_argument("--json", metavar="PATH", nargs="?", const="auto",
@@ -53,13 +57,65 @@ def build_parser() -> argparse.ArgumentParser:
                         help="suppress progress output")
     parser.add_argument("--no-color", action="store_true",
                         help="disable colored terminal output")
+    parser.add_argument("--set-output-dir", metavar="DIR",
+                        help="permanently save DIR as the report output "
+                             "directory, then exit")
+    parser.add_argument("--set-pdf-dir", metavar="DIR",
+                        help="permanently save DIR as the PDF destination, "
+                             "then exit")
+    parser.add_argument("--reset-config", action="store_true",
+                        help="clear all saved configuration, then exit")
+    parser.add_argument("--show-config", action="store_true",
+                        help="print the saved configuration, then exit")
     parser.add_argument("--version", action="version",
                         version=f"vulnscan {__version__}")
     return parser
 
 
+def _handle_config_flags(args) -> int:
+    """Process config-management flags; return an exit code (0 = continue)."""
+    cfg = config_mod.load_config()
+    changed = False
+    if args.set_output_dir is not None:
+        cfg["output_dir"] = args.set_output_dir
+        changed = True
+        print(f"saved: automatic HTML/JSON reports go to {args.set_output_dir}")
+    if args.set_pdf_dir is not None:
+        cfg["pdf_dir"] = args.set_pdf_dir
+        changed = True
+        print(f"saved: automatic PDF reports go to {args.set_pdf_dir}")
+    if args.reset_config:
+        cfg = dict(config_mod.DEFAULTS)
+        changed = True
+        print("saved configuration cleared (defaults: out/ and Downloads)")
+    if changed:
+        config_mod.save_config(cfg)
+        print(f"config written to {config_mod.CONFIG_PATH}")
+    if args.show_config:
+        saved = {k: v for k, v in cfg.items() if v is not None}
+        if saved:
+            print(f"config file: {config_mod.CONFIG_PATH}")
+            for key, value in saved.items():
+                print(f"  {key} = {value}")
+        else:
+            print("no saved configuration; defaults in effect "
+                  "(out/ and Downloads)")
+    return 0 if (changed or args.show_config) else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+
+    config_flags = (args.set_output_dir, args.set_pdf_dir,
+                    args.reset_config, args.show_config)
+    if any(f is not None and f is not False for f in config_flags):
+        return _handle_config_flags(args)
+
+    # Per-run flags win over the saved config; saved config wins over defaults.
+    saved = config_mod.load_config()
+    args.output_dir = args.output_dir or saved["output_dir"] or "out"
+    pdf_dir = args.pdf_dir or saved["pdf_dir"]
+
     try:
         hosts = parse_targets(args.targets)
         ports = parse_ports(args.ports)
@@ -123,8 +179,11 @@ def main(argv: list[str] | None = None) -> int:
         written.append(html_path)
     wants_pdf = (not args.no_pdf) if args.pdf is None else (args.pdf is not None)
     if wants_pdf and html_path:
-        target = (pdf_mod.default_pdf_path()
-                  if args.pdf in (None, "auto") else Path(args.pdf))
+        if args.pdf in (None, "auto"):
+            target = (Path(pdf_dir) / pdf_mod.default_pdf_path().name
+                      if pdf_dir else pdf_mod.default_pdf_path())
+        else:
+            target = Path(args.pdf)
         try:
             pdf_path = pdf_mod.html_to_pdf(Path(html_path), target)
             written.append(str(pdf_path))

@@ -21,6 +21,12 @@ python -m vulnscan scanme.org            # scan + ALL reports, automatically
 # only the summary in the terminal, no files:
 python -m vulnscan scanme.org --no-html --no-json --no-pdf
 
+# permanently change where reports are saved (set once, applies forever):
+python -m vulnscan --set-output-dir C:\Users\you\Documents\scan-reports
+python -m vulnscan --set-pdf-dir C:\Users\you\Documents\scan-reports
+python -m vulnscan --show-config        # see what's saved
+python -m vulnscan --reset-config       # back to defaults (out/ + Downloads)
+
 # preview the generated report on this machine:
 python3 tests/serve_report.py            # → http://127.0.0.1:8622/report.html
 ```
@@ -48,11 +54,16 @@ Options:
 | `-c, --concurrency` | max simultaneous probes (default 256) |
 | `--legacy-tls` | additionally test for TLS 1.0/1.1 support (slower) |
 | *(default)* | HTML + JSON reports land in `out/`, PDF in Downloads — automatically |
-| `-o, --output-dir DIR` | directory for the automatic HTML/JSON reports (default `out/`) |
+| `-o, --output-dir DIR` | directory for the automatic HTML/JSON reports (default: saved config, else `out/`) |
+| `--pdf-dir DIR` | directory for the automatic PDF report (default: saved config, else Downloads) |
 | `--html PATH` / `--json PATH` / `--pdf PATH` | override the automatic report destination |
 | `--no-html` / `--no-json` / `--no-pdf` | skip that report artifact |
 | `-q, --quiet` | no progress output |
 | `--no-color` | plain terminal output |
+| `--set-output-dir DIR` | **permanently** save DIR as the report directory (one-time command) |
+| `--set-pdf-dir DIR` | **permanently** save DIR as the PDF destination (one-time command) |
+| `--show-config` | print the saved configuration |
+| `--reset-config` | clear saved configuration, back to defaults |
 
 Exit code is `1` when findings exist, `0` when the target is clean — handy for
 CI gates.
