@@ -26,6 +26,7 @@ class Finding:
     cwe: list[str] = field(default_factory=list)
     cve: list[str] = field(default_factory=list)
     references: list[str] = field(default_factory=list)
+    next_steps: list[str] = field(default_factory=list)
     status: str = "open"
     id: str = ""
 
@@ -944,6 +945,13 @@ async def run_checks(services: list[PortService], timeout: float,
                                  f.asset.get("port", 0), f.rule_id))
     for index, finding in enumerate(findings, start=1):
         finding.id = f"VS-{index:04d}"
+
+    # Attach playbook steps (scan-to-exploit validation recipes).
+    from .playbook import steps_for  # local import avoids cycles
+    for finding in findings:
+        finding.next_steps = steps_for(
+            finding.rule_id, finding.asset.get("host", ""),
+            finding.asset.get("port", ""))
     return findings
 
 
