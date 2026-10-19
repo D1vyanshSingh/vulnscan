@@ -54,7 +54,6 @@ Options:
 | `-c, --concurrency` | max simultaneous probes (default 256) |
 | `--legacy-tls` | additionally test for TLS 1.0/1.1 support (slower) |
 | *(default)* | HTML + JSON reports land in `out/`, PDF in Downloads — automatically |
-| Each finding | includes **`next_steps`** — ready-to-run commands (redis-cli, hydra, msfconsole, curl …) with the target's IP/port filled in, so the report doubles as a scan-to-exploit playbook |
 | `-o, --output-dir DIR` | directory for the automatic HTML/JSON reports (default: saved config, else `out/`) |
 | `--pdf-dir DIR` | directory for the automatic PDF report (default: saved config, else Downloads) |
 | `--html PATH` / `--json PATH` / `--pdf PATH` | override the automatic report destination |

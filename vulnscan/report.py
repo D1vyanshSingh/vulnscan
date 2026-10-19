@@ -104,7 +104,6 @@ def _finding_dict(finding: Finding) -> dict:
         "evidence": finding.evidence,
         "remediation": finding.remediation,
         "references": finding.references,
-        "next_steps": finding.next_steps,
         "provenance": {"scanner": f"vulnscan {__version__}"},
     }
 
@@ -425,9 +424,6 @@ def _render_finding(f: dict) -> str:
     refs = "".join(
         f'<div><a href="{e(r)}" rel="noopener">{e(r)}</a></div>'
         for r in f.get("references", []))
-    next_steps = "".join(
-        f'<li><code>{e(s)}</code></li>'
-        for s in f.get("next_steps", []))
     return f"""
 <div class="finding" data-sev="{e(f["severity"])}"
      style="border-left-color:{sev["hex"]}">
@@ -449,7 +445,6 @@ def _render_finding(f: dict) -> str:
     <dd><pre>{e(f["evidence"])}</pre></dd>
     <dt>Recommendation</dt>
     <dd>{e(f["remediation"])}</dd>
-    {f'<dt>Verify it yourself (authorized targets only)</dt><dd><ul>{next_steps}</ul></dd>' if next_steps else ''}
     {f'<dt>References</dt><dd>{refs}</dd>' if refs else ''}
   </dl>
 </div>"""
