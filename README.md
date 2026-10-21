@@ -152,6 +152,33 @@ The JSON uses the same content with a `report_version`, `metadata`, `scope`,
 Fields are omitted rather than invented: a finding without a CVE lists no
 CVE content, and unknown certificate fields stay empty.
 
+### Sample report
+
+This representative excerpt comes from the deliberately vulnerable **local test
+rig** (`127.0.0.1`), not a real-world assessment:
+
+| Scan overview | Result |
+|---|---:|
+| Ports scanned | 7 |
+| Open services | 7 |
+| Total findings | 25 |
+| Critical / High / Medium / Low / Informational | 5 / 1 / 4 / 11 / 4 |
+
+**VS-0001 · Critical · Certain** — *vsftpd 2.3.4 backdoor (CVE-2011-2523)*
+
+- **Affected service:** `127.0.0.1:2121/tcp` (FTP)
+- **Evidence:** `220 (vsFTPD 2.3.4)`
+- **Impact:** Remote code execution as the FTP server user.
+- **Recommendation:** Reinstall a current vsftpd release and audit the host
+  for signs of compromise.
+
+**[Open the full sample PDF report](sample-report.pdf)** — an eight-page report
+from the local test rig, including the complete findings, recommendations and
+observed services.
+
+The generated HTML report presents the same information in a styled, interactive
+format.
+
 ## Testing
 
 `python3 tests/fake_services.py` starts a rig of deliberately vulnerable fake
